@@ -413,6 +413,17 @@ terraform init
 terraform apply
 
 ```
+Apply your configuration with the traffic_distribution variable set to green to run a blue-green-deployment. Remember to confirm your apply with a yes.
+
+```hcl
+terraform apply -var 'traffic_distribution=green'
+```
+Verify your blue-green-deployment environment by visiting the load balancer's DNS name in your browser or cURLing it from your terminal.
+
+```hcl
+for i in `seq 1 10`; do curl <Your url lb output>; done
+```
+This is BLUE_GREEN_DEPLOYMENT
 
 
 
