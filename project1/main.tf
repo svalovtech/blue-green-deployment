@@ -111,7 +111,7 @@ resource "aws_lb" "web" {
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.web.arn
-  port              = "80"
+  port              = var.port[1]
   protocol          = "HTTP"
 
  
