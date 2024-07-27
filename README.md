@@ -1,8 +1,9 @@
 # terraform-blue-green-deployment
 
+```hcl
 module "group-4" {
 
-                source               = ""
+                source               = "svalovtech/green-deployment/blue"
                 version              = "1.0.0"
                 region               = "us-east-2"
                 traffic_distribution = "split"
@@ -35,3 +36,4 @@ module "group-4" {
 
 
 }
+```
