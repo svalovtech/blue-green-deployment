@@ -76,29 +76,7 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
  
-default_action {
-    type             = "forward"
-# target_group_arn =aws_lb_target_group.blue-group.arn
 
-      forward {
-        target_group {
-          arn    = aws_lb_target_group.blue-group.arn
-          weight = lookup(local.traffic_dist_map[var.traffic_distribution], "blue", 100)
-        }
-
-        target_group {
-          arn    = aws_lb_target_group.green-group.arn
-          weight = lookup(local.traffic_dist_map[var.traffic_distribution], "green", 0)
-        }
-
-        stickiness {
-          enabled  = false
-          duration = 1
-        }
-      }
-	  
-  }
-}
 ```
 
 sg.tf
@@ -257,3 +235,184 @@ resource "aws_lb_target_group_attachment" "green" {
   port             = var.port[1].from_port
 }
 ```
+
+ Create variables.tf
+
+```hcl
+variable region {
+  type =string
+}
+
+variable rt_names {
+  type = list(string)
+}
+
+variable ing_name {
+  type = string
+}
+
+variable port {
+ type = list(object({
+  from_port = number
+  to_port   = number
+ }))
+}
+
+variable subnet {
+  type = list(object({
+    cidr = string
+    subnet_name = string
+  }))
+}
+variable instance_type {
+  type =string
+}
+
+variable vpc_cidr {
+    type = list(object({
+      cidr_block = string
+      dns_support = bool
+      dns_hostnames = bool
+    }))
+  
+}
+variable key_name {
+  type = string
+}
+
+variable "traffic_distribution" {
+  description = "Levels of traffic distribution"
+  type        = string
+}
+
+variable "enable_blue_env" {
+  description = "Enable green environment"
+  type        = bool
+}
+
+variable "blue_instance_count" {
+  description = "Number of instances in green environment"
+  type        = number
+}
+
+variable "enable_green_env" {
+  description = "Enable green environment"
+  type        = bool
+}
+
+variable "green_instance_count" {
+  description = "Number of instances in green environment"
+  type        = number
+}
+```
+First, add the configuration for the local value and traffic distribution variable to variables.tf.
+
+```hcl
+locals {
+  traffic_dist_map = {
+    blue = {
+      blue  = 100
+      green = 0
+    }
+    blue-90 = {
+      blue  = 90
+      green = 10
+    }
+    split = {
+      blue  = 50
+      green = 50
+    }
+    green-90 = {
+      blue  = 10
+      green = 90
+    }
+    green = {
+      blue  = 0
+      green = 100
+    }
+  }
+}
+```
+
+
+
+Notice that the local variable defines five traffic distributions. Each traffic distribution specifies the weight for the respective target group:
+
+The blue target distribution is the current distribution — the load balancer routes 100% of the traffic to the blue environment, 0% to the green environment.
+
+The blue-90 target distribution simulates canary testing. This canary test routes 90% of the traffic to the blue environment and 10% to the green environment.
+
+The split target distribution builds on top of canary testing by increasing traffic to the green environment. This splits the traffic evenly between the blue and green environments (50/50).
+
+The green-90 target distribution increases traffic to the green environment, sending 90% of the traffic to the green environment, 10% to the blue environment.
+
+The green target distribution fully promotes the green environment — the load balancer routes 100% of the traffic to the green environment.
+
+Modify the aws_lb_listener.app's default_action block in main.tf to match the following. The configuration uses lookup to set the target groups' weight. Notice that the configuration defaults to directing all traffic to the blue environment if no value is set.
+
+```hcl
+default_action {
+    type             = "forward"
+
+
+      forward {
+        target_group {
+          arn    = aws_lb_target_group.blue-group.arn
+          weight = lookup(local.traffic_dist_map[var.traffic_distribution], "blue", 100)
+        }
+
+        target_group {
+          arn    = aws_lb_target_group.green-group.arn
+          weight = lookup(local.traffic_dist_map[var.traffic_distribution], "green", 0)
+        }
+
+        stickiness {
+          enabled  = false
+          duration = 1
+        }
+      }
+	  
+  }
+  ```
+  Create backend.tf
+
+  1.Create S3 bucket(TFSTATE.file) manualy and DynamoDB(LockID)
+
+  2.Create file backend.tf  and configurate 
+
+  ```hcl
+  terraform {
+  backend "s3" {
+    bucket = "blue-green-deployment-group-4"
+    key    = "ohio/terraform.tfstate"
+    region = "us-east-2"
+    dynamodb_table = "state-lock"
+  }
+}
+```
+Create route53.tf(optinal)
+
+```hcl
+resource "aws_route53_record" "www" {
+  zone_id = "Z09937073QW4Q0S20WQQ4"
+  name = "www.devspro.net"
+  type = "A"
+  alias {
+    name                   = aws_lb.web.dns_name
+    zone_id                = aws_lb.web.zone_id
+    evaluate_target_health = true
+  }
+
+}
+```
+Begin Blue-Green-Deployment Test
+
+```hcl
+terraform init
+
+terraform apply
+
+```
+
+
+
