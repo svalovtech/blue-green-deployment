@@ -32,7 +32,7 @@ resource "aws_instance" "green-ec2" {
 resource "aws_lb_target_group" "green-group" {
   name                 = "green-target-group"
   vpc_id               = aws_vpc.vpc.id
-  port                 = var.port[1]
+  port                 = var.port[1].from_port
   protocol             = "HTTP"
   
   health_check {
@@ -41,7 +41,7 @@ resource "aws_lb_target_group" "green-group" {
     timeout             = 5
     protocol            = "HTTP"
     interval            = 10
-    port                = var.port[1]
+    port                = var.port[1].from_port
   }
 }
 
@@ -51,7 +51,7 @@ resource "aws_lb_target_group_attachment" "green" {
   count            = length(aws_instance.green-ec2)
   target_group_arn = aws_lb_target_group.green-group.arn
   target_id        = aws_instance.green-ec2[count.index].id
-  port             = var.port[1]
+  port             = var.port[1].from_port
 }
 
 
