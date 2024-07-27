@@ -34,6 +34,7 @@ This repository contains multiple Terraform configuration files:
     5.user-data-blue.sh contains the script to start the web server blue.
 
     6.user-data-green.sh contains the script to start the web server green.
+
     7.terraform.tfvars defines the terraform block, which specifies the Terraform binary and AWS provider versions.
 
     8.sg.tf   Is the resource type for AWS security groups.
@@ -132,6 +133,7 @@ resource "aws_security_group" "allow_tls" {
 
 
 Review ec2-blue.tf and ec2-green.tf
+
 Open ec2-blue.tf. This configuration defines  AWS instance that start web server, which return the text Version 1.0 . This represents the sample application's first version and indicates which server responded to the request.
 
 ```hcl
