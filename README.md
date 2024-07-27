@@ -4,7 +4,7 @@
 module "group-4" {
 
             source               = "svalovtech/green-deployment/blue"
-            version              = "5.0.0"
+            version              = "1.0.0"
             region               = "us-east-2"
             traffic_distribution = "split"
             key_name             = "Bastion"
